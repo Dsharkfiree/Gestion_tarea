@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Tareas</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        a.create-task {
+            display: inline-block;
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        a.create-task:hover {
+            background-color: #0056b3;
+        }
+
+        .task-list {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .task-list li {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .task-status {
+            font-weight: bold;
+            margin-right: 20px;
+        }
+
+        .actions a {
+            margin-left: 10px;
+            color: #007bff;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .actions a:hover {
+            color: #0056b3;
+        }
+
+        .actions a.delete {
+            color: #dc3545;
+        }
+
+        .actions a.delete:hover {
+            color: #c82333;
+        }
+
+        .change-status {
+            cursor: pointer;
+            color: #28a745;
+        }
+
+        .creation-date {
+            font-size: 0.9em;
+            color: #666;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Lista de Tareas</h1>
+        <a href="{% url 'crear_tarea' %}" class="create-task">Crear nueva tarea</a>
+        <ul class="task-list">
+            {% for tarea in tareas %}
+            <li id="task-{{ tarea.id }}">
+                <span class="task-status">{{ tarea.titulo }} - 
+                    {% if tarea.estado %}
+                    <strong style="color: green;">Completada</strong>
+                    {% else %}
+                    <strong style="color: red;">Pendiente</strong>
+                    {% endif %}
+                </span>
+                <span class="creation-date">{{ tarea.fecha_creacion|date:"d/m/Y H:i" }}</span>
+                <span class="actions">
+                    <a href="#" class="change-status" data-id="{{ tarea.id }}">Cambiar estado</a> |
+                    <a href="{% url 'editar_tarea' tarea.id %}">Editar</a> |
+                    <a href="{% url 'eliminar_tarea' tarea.id %}" class="delete">Eliminar</a>
+                </span>
+            </li>
+            {% empty %}
+            <li>No hay tareas.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            $('.change-status').click(function (e) {
+                e.preventDefault(); // Evitar el comportamiento por defecto del enlace
+                var taskId = $(this).data('id');
+                var $statusLabel = $('#task-' + taskId).find('.task-status');
+
+                $.ajax({
+                    url: "{% url 'cambiar_estado' 0 %}".replace('0', taskId),
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}' // Incluir el token CSRF
+                    },
+                    success: function (response) {
+                        // Cambiar el estado de la tarea en el DOM
+                        if (response.estado) {
+                            $statusLabel.find('strong').text('Completada').css('color', 'green');
+                        } else {
+                            $statusLabel.find('strong').text('Pendiente').css('color', 'red');
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error al cambiar el estado:', error);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
